@@ -60,6 +60,11 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         return path.startsWith("/oauth2/") || path.startsWith("/login");
     }
 
+//    @Override
+//    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+//
+//    }
+
 
     private String getJWTFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
