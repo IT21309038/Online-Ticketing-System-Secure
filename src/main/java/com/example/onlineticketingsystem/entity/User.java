@@ -23,7 +23,7 @@ public class User {
     private String contactNo;
     @NonNull
     private String password;
-    @ManyToOne
-    @JoinColumn(name = "role_id", referencedColumnName = "id")
-    private Role role;
+    @NonNull
+    private String userType;
 }
+
