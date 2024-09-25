@@ -30,7 +30,7 @@ public class OnlinePaymentController {
     private AuditLogService auditLogService;
 
     @PostMapping("/saveOnlinePayment")
-    public ResponseEntity<?> saveUser(@RequestBody OnlinePaymentDTO onlinePaymentDTO, Authentication authentication) {
+    public ResponseEntity<?> saveOnlinePayment(@RequestBody OnlinePaymentDTO onlinePaymentDTO, Authentication authentication) {
         logger.info("User '{}' is attempting to save an online payment", authentication.getName());
 
         if (authentication.getAuthorities().stream().noneMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("passenger"))) {
@@ -38,12 +38,17 @@ public class OnlinePaymentController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have passenger role.");
         }
 
-        OnlinePaymentDTO onlinePayment = onlinePaymentService.saveOnlinePayment(onlinePaymentDTO);
-        auditLogService.createAuditLog("CREATE", authentication.getName(), authentication.getAuthorities().toString(),
-                "Saved online payment with payment id " + onlinePaymentDTO.getPaymentID());
+        try {
+            OnlinePaymentDTO onlinePayment = onlinePaymentService.saveOnlinePayment(onlinePaymentDTO);
+            auditLogService.createAuditLog("CREATE", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Saved online payment with payment id " + onlinePaymentDTO.getPaymentID());
 
-        logger.info("User '{}' successfully saved an online payment with payment id {}", authentication.getName(), onlinePaymentDTO.getPaymentID());
-        return ResponseEntity.ok(onlinePayment);
+            logger.info("User '{}' successfully saved an online payment with payment id {}", authentication.getName(), onlinePaymentDTO.getPaymentID());
+            return ResponseEntity.ok(onlinePayment);
+        } catch (Exception e) {
+            logger.error("An error occurred while saving online payment: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while saving online payment");
+        }
     }
 
     @GetMapping("/getOnlinePayment/{userID}")
@@ -55,11 +60,17 @@ public class OnlinePaymentController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have passenger role.");
         }
 
-        List<OnlinePayment> onlinePayment = onlinePaymentService.getOnlinePaymentByUserId(userID);
-        auditLogService.createAuditLog("READ", authentication.getName(), authentication.getAuthorities().toString(),
-                "Fetched online payments for user ID " + userID);
+        try {
+            List<OnlinePayment> onlinePayment = onlinePaymentService.getOnlinePaymentByUserId(userID);
+            auditLogService.createAuditLog("READ", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Fetched online payments for user ID " + userID);
 
-        logger.info("User '{}' successfully fetched online payments for user ID {}", authentication.getName(), userID);
-        return ResponseEntity.ok(onlinePayment);
+            logger.info("User '{}' successfully fetched online payments for user ID {}", authentication.getName(), userID);
+            return ResponseEntity.ok(onlinePayment);
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching online payments for user ID {}: {}", userID, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching online payments");
+        }
     }
+
 }

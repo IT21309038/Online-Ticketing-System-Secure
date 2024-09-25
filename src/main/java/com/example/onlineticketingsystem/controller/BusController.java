@@ -36,10 +36,22 @@ public class BusController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin role.");
         }
 
-        List<BusDTO> busDTOList = busService.getAllBuses();
-        logger.info("User '{}' successfully accessed bus data", authentication.getName());
-        auditLogService.createAuditLog("Read", authentication.getName(), getRole(authentication), "Accessed all buses");
-        return ResponseEntity.ok(busDTOList);
+        try {
+            List<BusDTO> busDTOList = busService.getAllBuses();
+
+            if (busDTOList.isEmpty()){
+                logger.warn("No buses found in the database");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No buses found in the database");
+            }else {
+                logger.info("User '{}' successfully accessed bus data", authentication.getName());
+                auditLogService.createAuditLog("Read", authentication.getName(), getRole(authentication), "Accessed all buses");
+            }
+            return ResponseEntity.ok(busDTOList);
+        }
+        catch (Exception e){
+            logger.error("An error occurred while fetching bus data: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching bus data");
+        }
     }
 
     @PutMapping("/updateBus")
@@ -51,10 +63,16 @@ public class BusController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin or bus-owner role.");
         }
 
+        try {
         BusDTO updatedBus = busService.updateBus(busDTO);
         logger.info("User '{}' successfully updated bus with ID {}", authentication.getName(), busDTO.getId());
         auditLogService.createAuditLog("Update", authentication.getName(), getRole(authentication), "Updated bus with ID " + busDTO.getId());
         return ResponseEntity.ok(updatedBus);
+        }
+        catch (Exception e){
+            logger.error("An error occurred while updating bus data: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while updating bus data");
+        }
     }
 
     @DeleteMapping("/deleteBus")
@@ -66,10 +84,16 @@ public class BusController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin or bus-owner role.");
         }
 
+        try{
         Boolean isDeleted = busService.deleteBus(busDTO);
         logger.info("User '{}' successfully deleted bus with ID {}", authentication.getName(), busDTO.getId());
         auditLogService.createAuditLog("Delete", authentication.getName(), getRole(authentication), "Deleted bus with ID " + busDTO.getId());
         return ResponseEntity.ok(isDeleted);
+        }
+        catch (Exception e){
+            logger.error("An error occurred while deleting bus data: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while deleting bus data");
+        }
     }
 
     @PostMapping("/saveBus")
@@ -81,10 +105,15 @@ public class BusController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin or bus-owner role.");
         }
 
-        BusDTO bus = busService.saveBus(busDTO);
-        logger.info("User '{}' successfully created a new bus with ID {}", authentication.getName(), bus.getId());
-        auditLogService.createAuditLog("Create", authentication.getName(), getRole(authentication), "Created bus with ID " + bus.getId());
-        return ResponseEntity.ok(bus);
+        try {
+            BusDTO bus = busService.saveBus(busDTO);
+            logger.info("User '{}' successfully created a new bus with ID {}", authentication.getName(), bus.getId());
+            auditLogService.createAuditLog("Create", authentication.getName(), getRole(authentication), "Created bus with ID " + bus.getId());
+            return ResponseEntity.ok(bus);
+        } catch (Exception e) {
+            logger.error("An error occurred while saving bus data: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while saving bus data");
+        }
     }
 
     private String getRole(Authentication authentication) {

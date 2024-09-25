@@ -36,12 +36,17 @@ public class TimeTableController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin role.");
         }
 
-        TimeTableDTO timeTable = timeTableService.saveTimetable(timeTableDTO);
-        auditLogService.createAuditLog("CREATE", authentication.getName(), authentication.getAuthorities().toString(),
-                "Created a new timetable: " + timeTableDTO);
+        try {
+            TimeTableDTO timeTable = timeTableService.saveTimetable(timeTableDTO);
+            auditLogService.createAuditLog("CREATE", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Created a new timetable: " + timeTableDTO);
 
-        logger.info("User '{}' successfully saved a new timetable.", authentication.getName());
-        return ResponseEntity.ok(timeTable);
+            logger.info("User '{}' successfully saved a new timetable.", authentication.getName());
+            return ResponseEntity.ok(timeTable);
+        } catch (Exception e) {
+            logger.error("An error occurred while saving the timetable: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while saving the timetable.");
+        }
     }
 
     // Get all timetables (admin and ticket-inspector)
@@ -54,12 +59,17 @@ public class TimeTableController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin or ticket-inspector role.");
         }
 
-        List<TimeTableDTO> timeTableDTOList = timeTableService.getAllTimetable();
-        auditLogService.createAuditLog("READ", authentication.getName(), authentication.getAuthorities().toString(),
-                "Fetched all timetables.");
+        try {
+            List<TimeTableDTO> timeTableDTOList = timeTableService.getAllTimetable();
+            auditLogService.createAuditLog("READ", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Fetched all timetables.");
 
-        logger.info("User '{}' successfully fetched all timetables.", authentication.getName());
-        return ResponseEntity.ok(timeTableDTOList);
+            logger.info("User '{}' successfully fetched all timetables.", authentication.getName());
+            return ResponseEntity.ok(timeTableDTOList);
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching timetables: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching timetables.");
+        }
     }
 
     // Update a timetable (admin only)
@@ -72,12 +82,17 @@ public class TimeTableController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin role.");
         }
 
-        TimeTableDTO updatedTimeTable = timeTableService.updateTimetable(timeTableDTO);
-        auditLogService.createAuditLog("UPDATE", authentication.getName(), authentication.getAuthorities().toString(),
-                "Updated timetable: " + timeTableDTO);
+        try {
+            TimeTableDTO updatedTimeTable = timeTableService.updateTimetable(timeTableDTO);
+            auditLogService.createAuditLog("UPDATE", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Updated timetable: " + timeTableDTO);
 
-        logger.info("User '{}' successfully updated a timetable.", authentication.getName());
-        return ResponseEntity.ok(updatedTimeTable);
+            logger.info("User '{}' successfully updated a timetable.", authentication.getName());
+            return ResponseEntity.ok(updatedTimeTable);
+        } catch (Exception e) {
+            logger.error("An error occurred while updating the timetable: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while updating the timetable.");
+        }
     }
 
     // Delete a timetable (admin only)
@@ -90,11 +105,17 @@ public class TimeTableController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin role.");
         }
 
-        Boolean isDeleted = timeTableService.deleteTimetable(timeTableDTO);
-        auditLogService.createAuditLog("DELETE", authentication.getName(), authentication.getAuthorities().toString(),
-                "Deleted timetable: " + timeTableDTO);
+        try {
+            Boolean isDeleted = timeTableService.deleteTimetable(timeTableDTO);
+            auditLogService.createAuditLog("DELETE", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Deleted timetable: " + timeTableDTO);
 
-        logger.info("User '{}' successfully deleted a timetable.", authentication.getName());
-        return ResponseEntity.ok(isDeleted);
+            logger.info("User '{}' successfully deleted a timetable.", authentication.getName());
+            return ResponseEntity.ok(isDeleted);
+        } catch (Exception e) {
+            logger.error("An error occurred while deleting the timetable: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while deleting the timetable.");
+        }
     }
+
 }

@@ -29,17 +29,23 @@ public class PassengerController {
     public ResponseEntity<?> getPassengerById(@PathVariable int userID, Authentication authentication) {
         logger.info("User '{}' is attempting to fetch passenger details for user ID {}", authentication.getName(), userID);
 
-        if (authentication.getAuthorities().stream().noneMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("passenger") || grantedAuthority.getAuthority().equals("admin"))) {
+        if (authentication.getAuthorities().stream().noneMatch(grantedAuthority ->
+                grantedAuthority.getAuthority().equals("passenger") || grantedAuthority.getAuthority().equals("admin"))) {
             logger.warn("Unauthorized access attempt by user '{}' for passenger ID {}", authentication.getName(), userID);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have passenger or admin role.");
         }
 
-        PassengerDTO passengerDTO = passengerService.getPassengerById(userID);
-        auditLogService.createAuditLog("READ", authentication.getName(), authentication.getAuthorities().toString(),
-                "Fetched passenger details for user ID " + userID);
+        try {
+            PassengerDTO passengerDTO = passengerService.getPassengerById(userID);
+            auditLogService.createAuditLog("READ", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Fetched passenger details for user ID " + userID);
 
-        logger.info("User '{}' successfully fetched passenger details for user ID {}", authentication.getName(), userID);
-        return new ResponseEntity<>(passengerDTO, HttpStatus.OK);
+            logger.info("User '{}' successfully fetched passenger details for user ID {}", authentication.getName(), userID);
+            return new ResponseEntity<>(passengerDTO, HttpStatus.OK);
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching passenger details for user ID {}: {}", userID, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching passenger details");
+        }
     }
 
     // Show balance of passenger
@@ -47,17 +53,23 @@ public class PassengerController {
     public ResponseEntity<?> getPassengerBalance(@PathVariable int userID, Authentication authentication) {
         logger.info("User '{}' is attempting to fetch balance for user ID {}", authentication.getName(), userID);
 
-        if (authentication.getAuthorities().stream().noneMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("passenger") || grantedAuthority.getAuthority().equals("admin"))) {
+        if (authentication.getAuthorities().stream().noneMatch(grantedAuthority ->
+                grantedAuthority.getAuthority().equals("passenger") || grantedAuthority.getAuthority().equals("admin"))) {
             logger.warn("Unauthorized access attempt by user '{}' for balance of user ID {}", authentication.getName(), userID);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have passenger or admin role.");
         }
 
-        int balance = passengerService.getBalanceByUserId(userID);
-        auditLogService.createAuditLog("READ", authentication.getName(), authentication.getAuthorities().toString(),
-                "Fetched balance for user ID " + userID);
+        try {
+            int balance = passengerService.getBalanceByUserId(userID);
+            auditLogService.createAuditLog("READ", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Fetched balance for user ID " + userID);
 
-        logger.info("User '{}' successfully fetched balance for user ID {}", authentication.getName(), userID);
-        return ResponseEntity.ok(balance);
+            logger.info("User '{}' successfully fetched balance for user ID {}", authentication.getName(), userID);
+            return ResponseEntity.ok(balance);
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching balance for user ID {}: {}", userID, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching balance");
+        }
     }
 
     // Update balance
@@ -65,17 +77,24 @@ public class PassengerController {
     public ResponseEntity<?> updateBalanceByUserId(@PathVariable int amount, @PathVariable int userID, Authentication authentication) {
         logger.info("User '{}' is attempting to update balance for user ID {} by amount {}", authentication.getName(), userID, amount);
 
-        if (authentication.getAuthorities().stream().noneMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("passenger") || grantedAuthority.getAuthority().equals("admin"))) {
+        if (authentication.getAuthorities().stream().noneMatch(grantedAuthority ->
+                grantedAuthority.getAuthority().equals("passenger") || grantedAuthority.getAuthority().equals("admin"))) {
             logger.warn("Unauthorized update attempt by user '{}' for user ID {}", authentication.getName(), userID);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have passenger or admin role.");
         }
 
-        passengerService.updateBalanceByUserId(amount, userID);
-        int updatedBalance = passengerService.getBalanceByUserId(userID);
-        auditLogService.createAuditLog("UPDATE", authentication.getName(), authentication.getAuthorities().toString(),
-                "Updated balance by " + amount + " for user ID " + userID);
+        try {
+            passengerService.updateBalanceByUserId(amount, userID);
+            int updatedBalance = passengerService.getBalanceByUserId(userID);
+            auditLogService.createAuditLog("UPDATE", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Updated balance by " + amount + " for user ID " + userID);
 
-        logger.info("User '{}' successfully updated balance for user ID {} by amount {}", authentication.getName(), userID, amount);
-        return ResponseEntity.ok(updatedBalance);
+            logger.info("User '{}' successfully updated balance for user ID {} by amount {}", authentication.getName(), userID, amount);
+            return ResponseEntity.ok(updatedBalance);
+        } catch (Exception e) {
+            logger.error("An error occurred while updating balance for user ID {}: {}", userID, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while updating balance");
+        }
     }
+
 }

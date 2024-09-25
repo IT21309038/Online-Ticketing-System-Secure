@@ -37,12 +37,17 @@ public class TicketInspectorController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin role.");
         }
 
-        List<TicketInspectorDTO> ticketInspector = ticketInspectorService.getAllInspectors();
-        auditLogService.createAuditLog("READ", authentication.getName(), authentication.getAuthorities().toString(),
-                "Fetched all ticket inspectors.");
+        try {
+            List<TicketInspectorDTO> ticketInspector = ticketInspectorService.getAllInspectors();
+            auditLogService.createAuditLog("READ", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Fetched all ticket inspectors.");
 
-        logger.info("User '{}' successfully fetched all ticket inspectors.", authentication.getName());
-        return ResponseEntity.ok(ticketInspector);
+            logger.info("User '{}' successfully fetched all ticket inspectors.", authentication.getName());
+            return ResponseEntity.ok(ticketInspector);
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching ticket inspectors: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching ticket inspectors.");
+        }
     }
 
     // Get Inspector by ID (admin and ticket-inspector roles)
@@ -55,13 +60,19 @@ public class TicketInspectorController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin or ticket-inspector role.");
         }
 
-        List<TicketInspector> ticketInspector = ticketInspectorService.getInspectorById(id);
-        auditLogService.createAuditLog("READ", authentication.getName(), authentication.getAuthorities().toString(),
-                "Fetched ticket inspector with ID: " + id);
+        try {
+            List<TicketInspector> ticketInspector = ticketInspectorService.getInspectorById(id);
+            auditLogService.createAuditLog("READ", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Fetched ticket inspector with ID: " + id);
 
-        logger.info("User '{}' successfully fetched ticket inspector with ID {}.", authentication.getName(), id);
-        return ResponseEntity.ok(ticketInspector);
+            logger.info("User '{}' successfully fetched ticket inspector with ID {}.", authentication.getName(), id);
+            return ResponseEntity.ok(ticketInspector);
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching ticket inspector with ID {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching ticket inspector.");
+        }
     }
+
 
 
 }

@@ -37,10 +37,15 @@ public class InspectController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin role.");
         }
 
+        try {
         InspectDTO inspect = inspectService.saveInspect(inspectDTO);
         logger.info("User '{}' successfully created an inspection", authentication.getName());
         auditLogService.createAuditLog("Create", authentication.getName(), "admin", "Created an inspection");
         return ResponseEntity.ok(inspect);
+        } catch (Exception e) {
+            logger.error("An error occurred while creating an inspection: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while creating an inspection");
+        }
     }
 
     @GetMapping("/getInspect")
@@ -52,10 +57,19 @@ public class InspectController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin or ticket-inspector role.");
         }
 
+        try{
         List<InspectDTO> inspects = inspectService.getAllInspects();
+        if (inspects.isEmpty()) {
+            logger.warn("No inspections found in the database");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No inspections found in the database");
+        }
         logger.info("User '{}' successfully accessed inspection data", authentication.getName());
         auditLogService.createAuditLog("Read", authentication.getName(), "admin", "Accessed all inspections");
         return ResponseEntity.ok(inspects);
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching inspection data: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching inspection data");
+        }
     }
 
     @GetMapping("/byInspector/{id}")
@@ -67,10 +81,21 @@ public class InspectController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have ticket-inspector or admin role.");
         }
 
+        try{
         List<Inspect> inspects = inspectService.getInspectsByInspectorId(id);
+
+        if (inspects.isEmpty()) {
+            logger.warn("No inspections found in the database for inspector ID {}", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No inspections found in the database for inspector ID " + id);
+        }
+
         logger.info("User '{}' successfully accessed inspections for inspector ID {}", authentication.getName(), id);
         auditLogService.createAuditLog("Read", authentication.getName(), "ticket-inspector", "Accessed inspections for inspector ID " + id);
         return ResponseEntity.ok(inspects);
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching inspection data: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching inspection data");
+        }
     }
 
     @DeleteMapping("/deleteInspect")
@@ -82,10 +107,15 @@ public class InspectController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin role.");
         }
 
+        try {
         Boolean isDeleted = inspectService.delete(inspectDTO);
         logger.info("User '{}' successfully deleted an inspection with ID {}", authentication.getName(), inspectDTO.getInspectId());
         auditLogService.createAuditLog("Delete", authentication.getName(), "admin", "Deleted an inspection with ID " + inspectDTO.getInspectId());
         return ResponseEntity.ok(isDeleted);
+        } catch (Exception e) {
+            logger.error("An error occurred while deleting an inspection: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while deleting an inspection");
+        }
     }
 
     @PutMapping("/updateInspect")
@@ -97,10 +127,15 @@ public class InspectController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin role.");
         }
 
+        try {
         InspectDTO updatedInspect = inspectService.updateInspect(inspectDTO);
         logger.info("User '{}' successfully updated an inspection with ID {}", authentication.getName(), inspectDTO.getInspectId());
         auditLogService.createAuditLog("Update", authentication.getName(), "admin", "Updated an inspection with ID " + inspectDTO.getInspectId());
         return ResponseEntity.ok(updatedInspect);
+        } catch (Exception e) {
+            logger.error("An error occurred while updating an inspection: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while updating an inspection");
+        }
     }
 
     @GetMapping("/fraudCount")
@@ -112,9 +147,14 @@ public class InspectController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin or ticket-inspector role.");
         }
 
+        try {
         int fraudCount = inspectService.fraudCount();
         logger.info("User '{}' successfully accessed fraud count", authentication.getName());
         return ResponseEntity.ok(fraudCount);
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching fraud count: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching fraud count");
+        }
     }
 
     @GetMapping("/fraudByRoute")
@@ -126,9 +166,18 @@ public class InspectController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin or ticket-inspector role.");
         }
 
-        Map<Integer, Integer> fraudByRoute = inspectService.fraudByRoute();
-        logger.info("User '{}' successfully accessed fraud by route", authentication.getName());
-        return ResponseEntity.ok(fraudByRoute);
+        try {
+            Map<Integer, Integer> fraudByRoute = inspectService.fraudByRoute();
+            if (fraudByRoute.isEmpty()) {
+                logger.warn("No fraud data found in the database");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No fraud data found in the database");
+            }
+            logger.info("User '{}' successfully accessed fraud by route", authentication.getName());
+            return ResponseEntity.ok(fraudByRoute);
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching fraud by route: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching fraud by route");
+        }
     }
 
 

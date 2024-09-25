@@ -35,12 +35,17 @@ public class RouteController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin role.");
         }
 
-        RouteDTO route = routeService.saveRoute(routeDTO);
-        auditLogService.createAuditLog("CREATE", authentication.getName(), authentication.getAuthorities().toString(),
-                "Created route with details: " + routeDTO.toString());
+        try {
+            RouteDTO route = routeService.saveRoute(routeDTO);
+            auditLogService.createAuditLog("CREATE", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Created route with details: " + routeDTO.toString());
 
-        logger.info("User '{}' successfully saved a new route.", authentication.getName());
-        return ResponseEntity.ok(route);
+            logger.info("User '{}' successfully saved a new route.", authentication.getName());
+            return ResponseEntity.ok(route);
+        } catch (Exception e) {
+            logger.error("An error occurred while saving route: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while saving route.");
+        }
     }
 
     // Get All Routes
@@ -53,12 +58,17 @@ public class RouteController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin role.");
         }
 
-        List<RouteDTO> routes = routeService.getAllRoutes();
-        auditLogService.createAuditLog("READ", authentication.getName(), authentication.getAuthorities().toString(),
-                "Fetched all routes.");
+        try {
+            List<RouteDTO> routes = routeService.getAllRoutes();
+            auditLogService.createAuditLog("READ", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Fetched all routes.");
 
-        logger.info("User '{}' successfully fetched all routes.", authentication.getName());
-        return ResponseEntity.ok(routes);
+            logger.info("User '{}' successfully fetched all routes.", authentication.getName());
+            return ResponseEntity.ok(routes);
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching routes: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching routes.");
+        }
     }
 
     // Update Route
@@ -71,12 +81,17 @@ public class RouteController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin role.");
         }
 
-        RouteDTO route = routeService.updateRoute(routeDTO);
-        auditLogService.createAuditLog("UPDATE", authentication.getName(), authentication.getAuthorities().toString(),
-                "Updated route number: " + routeDTO.getRouteNo());
+        try {
+            RouteDTO route = routeService.updateRoute(routeDTO);
+            auditLogService.createAuditLog("UPDATE", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Updated route number: " + routeDTO.getRouteNo());
 
-        logger.info("User '{}' successfully updated route number {}.", authentication.getName(), routeDTO.getRouteNo());
-        return ResponseEntity.ok(route);
+            logger.info("User '{}' successfully updated route number {}.", authentication.getName(), routeDTO.getRouteNo());
+            return ResponseEntity.ok(route);
+        } catch (Exception e) {
+            logger.error("An error occurred while updating route number {}: {}", routeDTO.getRouteNo(), e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while updating route.");
+        }
     }
 
     // Delete Route
@@ -89,11 +104,17 @@ public class RouteController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. You need to have admin role.");
         }
 
-        Boolean isDeleted = routeService.deleteRoute(routeDTO);
-        auditLogService.createAuditLog("DELETE", authentication.getName(), authentication.getAuthorities().toString(),
-                "Deleted route number: " + routeDTO.getRouteNo());
+        try {
+            Boolean isDeleted = routeService.deleteRoute(routeDTO);
+            auditLogService.createAuditLog("DELETE", authentication.getName(), authentication.getAuthorities().toString(),
+                    "Deleted route number: " + routeDTO.getRouteNo());
 
-        logger.info("User '{}' successfully deleted route with ID {}.", authentication.getName(), routeDTO.getRouteNo());
-        return ResponseEntity.ok(isDeleted);
+            logger.info("User '{}' successfully deleted route with ID {}.", authentication.getName(), routeDTO.getRouteNo());
+            return ResponseEntity.ok(isDeleted);
+        } catch (Exception e) {
+            logger.error("An error occurred while deleting route number {}: {}", routeDTO.getRouteNo(), e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while deleting route.");
+        }
     }
+
 }

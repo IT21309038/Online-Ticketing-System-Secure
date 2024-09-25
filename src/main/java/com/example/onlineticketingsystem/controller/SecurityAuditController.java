@@ -39,9 +39,20 @@ public class SecurityAuditController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. Admin role required.");
         }
 
-        List<SecurityLog> securityLogs = securityLogService.getAllSecurityLogs();
-        logger.info("Admin '{}' accessed Security Logs", authentication.getName());
-        return ResponseEntity.ok(securityLogs);
+        try {
+            List<SecurityLog> securityLogs = securityLogService.getAllSecurityLogs();
+
+            if (securityLogs.isEmpty()) {
+                logger.warn("No security logs found in the database");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No security logs found in the database");
+            }
+
+            logger.info("Admin '{}' accessed Security Logs", authentication.getName());
+            return ResponseEntity.ok(securityLogs);
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching security logs: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching security logs.");
+        }
     }
 
     // Get all Audit Logs
@@ -53,8 +64,20 @@ public class SecurityAuditController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Access denied. Admin role required.");
         }
 
-        List<AuditLog> auditLogs = auditLogService.getAllAuditLogs();
-        logger.info("Admin '{}' accessed Audit Logs", authentication.getName());
-        return ResponseEntity.ok(auditLogs);
+        try {
+            List<AuditLog> auditLogs = auditLogService.getAllAuditLogs();
+
+            if (auditLogs.isEmpty()) {
+                logger.warn("No audit logs found in the database");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No audit logs found in the database");
+            }
+
+            logger.info("Admin '{}' accessed Audit Logs", authentication.getName());
+            return ResponseEntity.ok(auditLogs);
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching audit logs: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching audit logs.");
+        }
     }
+
 }
