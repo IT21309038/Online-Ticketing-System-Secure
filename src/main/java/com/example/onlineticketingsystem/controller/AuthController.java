@@ -22,16 +22,15 @@ public class AuthController {
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     private final AuthService authService;
+    private final SecurityLogService securityLogService;
+    private final RateLimiterService rateLimiterService;
 
     @Autowired
-    private SecurityLogService securityLogService;
-
-    @Autowired
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, SecurityLogService securityLogService, RateLimiterService rateLimiterService) {
         this.authService = authService;
+        this.securityLogService = securityLogService;
+        this.rateLimiterService = rateLimiterService;
     }
-    
-    public RateLimiterService rateLimiterService ;
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterDTO registerDTO, HttpServletRequest request) {
@@ -48,46 +47,42 @@ public class AuthController {
         }
     }
 
-//    @PostMapping("/Register")
-//    public ResponseEntity<String> Register(@RequestBody RegisterDTO registerDTO) {
-//        try {
-//            authService.registerUser(registerDTO);
-//            return new ResponseEntity<>("User registered successfully!", HttpStatus.OK);
-//        } catch (RuntimeException e) {
-//            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-//        }
-//    }
-
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDTO> login(@RequestBody LoginDTO loginDTO, HttpServletRequest request) {
+    public ResponseEntity<?> login(@RequestBody LoginDTO loginDTO, HttpServletRequest request) {
         String ipAddress = request.getRemoteAddr();
+
+        // Log remaining attempts before checking if blocked
+        int remainingAttempts = rateLimiterService.getRemainingAttempts(ipAddress);
+        logger.info("Remaining login attempts for IP {}: {}", ipAddress, remainingAttempts);
 
         // Check if the IP is currently blocked due to brute force attempts
         if (rateLimiterService.isBlocked(ipAddress)) {
             logger.warn("Blocked login attempt from blocked IP: {}", ipAddress);
             securityLogService.logAccess("LOGIN", loginDTO.getUsername(), "BLOCKED", ipAddress, "IP blocked due to multiple failed attempts");
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(null);
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body("Too many failed attempts. Please try again later.");
         }
 
         try {
             AuthResponseDTO response = authService.loginUser(loginDTO);
             logger.info("User '{}' logged in successfully from IP: {}", loginDTO.getUsername(), ipAddress);
             securityLogService.logAccess("LOGIN", loginDTO.getUsername(), "SUCCESS", ipAddress, "User login successful");
+
+            // Reset attempts on successful login
+            rateLimiterService.resetAttempts(ipAddress);
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (RuntimeException e) {
-            logger.warn("Failed login attempt by '{}' from IP: {}", loginDTO.getUsername(), ipAddress);
+            // Log failed login attempt
+            logger.warn("Failed login attempt by '{}' from IP: {}. Reason: {}", loginDTO.getUsername(), ipAddress, e.getMessage());
+
+            // Record the failed attempt
+            rateLimiterService.recordFailedAttempt(ipAddress);
+
+            // Log remaining attempts after failure
+            remainingAttempts = rateLimiterService.getRemainingAttempts(ipAddress);
+            logger.info("Remaining login attempts after failure for IP {}: {}", ipAddress, remainingAttempts);
+
             securityLogService.logAccess("LOGIN", loginDTO.getUsername(), "FAILURE", ipAddress, e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login failed. Please check your credentials.");
         }
     }
-
-//    @PostMapping("/Login")
-//    public ResponseEntity<AuthResponseDTO> Login(@RequestBody LoginDTO loginDTO) {
-//        try {
-//            AuthResponseDTO response = authService.loginUser(loginDTO);
-//            return new ResponseEntity<>(response, HttpStatus.OK);
-//        } catch (RuntimeException e) {
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
-//        }
-//    }
 }
