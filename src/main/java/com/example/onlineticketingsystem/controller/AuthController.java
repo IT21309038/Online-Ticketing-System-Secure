@@ -4,6 +4,7 @@ import com.example.onlineticketingsystem.DTO.AuthResponseDTO;
 import com.example.onlineticketingsystem.DTO.LoginDTO;
 import com.example.onlineticketingsystem.DTO.RegisterDTO;
 import com.example.onlineticketingsystem.service.AuthService;
+import com.example.onlineticketingsystem.service.RateLimiterService;
 import com.example.onlineticketingsystem.service.SecurityLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -29,6 +30,8 @@ public class AuthController {
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
+    
+    public RateLimiterService rateLimiterService ;
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterDTO registerDTO, HttpServletRequest request) {
@@ -58,6 +61,14 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@RequestBody LoginDTO loginDTO, HttpServletRequest request) {
         String ipAddress = request.getRemoteAddr();
+
+        // Check if the IP is currently blocked due to brute force attempts
+        if (rateLimiterService.isBlocked(ipAddress)) {
+            logger.warn("Blocked login attempt from blocked IP: {}", ipAddress);
+            securityLogService.logAccess("LOGIN", loginDTO.getUsername(), "BLOCKED", ipAddress, "IP blocked due to multiple failed attempts");
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(null);
+        }
+
         try {
             AuthResponseDTO response = authService.loginUser(loginDTO);
             logger.info("User '{}' logged in successfully from IP: {}", loginDTO.getUsername(), ipAddress);
