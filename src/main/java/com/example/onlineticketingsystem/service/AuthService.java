@@ -6,6 +6,8 @@ import com.example.onlineticketingsystem.DTO.RegisterDTO;
 import com.example.onlineticketingsystem.entity.*;
 import com.example.onlineticketingsystem.repo.*;
 import com.example.onlineticketingsystem.security.JWTGenerator;
+import org.owasp.html.HtmlPolicyBuilder;
+import org.owasp.html.PolicyFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -20,14 +22,19 @@ import java.util.Optional;
 @Service
 public class AuthService {
 
-    private AuthenticationManager authenticationManager;
-    private PassengerRepo passengerRepo;
-    private TicketInspectorRepo ticketInspectorRepo;
-    private BusOwnerRepo busOwnerRepo;
-    private AdminRepo adminRepo;
-    private RoleRepo roleRepo;
-    private PasswordEncoder passwordEncoder;
-    private JWTGenerator jwtGenerator;
+    private final AuthenticationManager authenticationManager;
+    private final PassengerRepo passengerRepo;
+    private final TicketInspectorRepo ticketInspectorRepo;
+    private final BusOwnerRepo busOwnerRepo;
+    private final AdminRepo adminRepo;
+    private final RoleRepo roleRepo;
+    private final PasswordEncoder passwordEncoder;
+    private final JWTGenerator jwtGenerator;
+
+
+    private static final PolicyFactory POLICY = new HtmlPolicyBuilder()
+            .allowElements("a", "b", "i", "strong", "em", "p")
+            .toFactory();
 
     @Autowired
     public AuthService(AuthenticationManager authenticationManager, PassengerRepo passengerRepo,
@@ -44,18 +51,18 @@ public class AuthService {
     }
 
     public void registerUser(RegisterDTO registerDTO) {
-        // Common fields
+
         String email = registerDTO.getEmail();
         String password = passwordEncoder.encode(registerDTO.getPassword());
-        String name = registerDTO.getName();
-        String contactNo = registerDTO.getContactNo();
+        String name = POLICY.sanitize(registerDTO.getName());
+        String contactNo = sanitizeContactNumber(registerDTO.getContactNo());
 
         Optional<Role> userRole = roleRepo.findById(registerDTO.getRole().getId());
         if (userRole.isEmpty()) {
             throw new RuntimeException("Role not found for the provided user type");
         }
 
-        String type = registerDTO.getType().toUpperCase();
+        String type = sanitizeType(registerDTO.getType());
 
         switch (type) {
             case "P":
@@ -76,7 +83,7 @@ public class AuthService {
                 busOwner.setName(name);
                 busOwner.setContactNo(contactNo);
                 busOwner.setRole(userRole.get());
-                busOwner.setRegistrationNo(registerDTO.getRegistrationNo());
+                busOwner.setRegistrationNo(Integer.parseInt(POLICY.sanitize(String.valueOf(registerDTO.getRegistrationNo()))));
                 busOwner.setOwnedBuses(registerDTO.getOwnedBuses());
                 busOwnerRepo.save(busOwner);
                 break;
@@ -88,7 +95,7 @@ public class AuthService {
                 ticketInspector.setName(name);
                 ticketInspector.setContactNo(contactNo);
                 ticketInspector.setRole(userRole.get());
-                ticketInspector.setInspectorID(registerDTO.getInspectorId());
+                ticketInspector.setInspectorID(Integer.parseInt(POLICY.sanitize(String.valueOf(registerDTO.getInspectorId()))));
                 ticketInspectorRepo.save(ticketInspector);
                 break;
 
@@ -108,16 +115,28 @@ public class AuthService {
     }
 
     public AuthResponseDTO loginUser(LoginDTO loginDTO) {
-        try{
+        try {
+            String sanitizedUsername = loginDTO.getUsername();
+            String sanitizedPassword = POLICY.sanitize(loginDTO.getPassword());
+
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginDTO.getUsername(), loginDTO.getPassword()));
+                    new UsernamePasswordAuthenticationToken(sanitizedUsername, sanitizedPassword));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
             String token = jwtGenerator.generateToken(authentication);
 
             return new AuthResponseDTO(token);
-        } catch (BadCredentialsException e){
+        } catch (BadCredentialsException e) {
             throw new RuntimeException("Invalid username or password!");
         }
+    }
+
+
+    private String sanitizeContactNumber(String contactNo) {
+        return contactNo.replaceAll("\\D", "");
+    }
+
+    private String sanitizeType(String type) {
+        return type.trim().toUpperCase();
     }
 }

@@ -55,6 +55,10 @@ public class SecurityConfig {
                         .successHandler(oAuth2AuthenticationSuccessHandler))  // Handle success with custom handler
                 .httpBasic(Customizer.withDefaults());
 
+        http
+                .headers()
+                .contentSecurityPolicy("default-src 'self'");
+
         // Place JWTAuthenticationFilter before OAuth2LoginAuthenticationFilter
         http.addFilterBefore(jwtAuthenticationFilter(), OAuth2LoginAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

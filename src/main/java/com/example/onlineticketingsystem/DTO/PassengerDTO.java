@@ -13,7 +13,7 @@ public class PassengerDTO {
     private String name;
     private String email;
     private String contactNo;
-    private String password;
+//    private String password;
     private Role role;
     private int balance;
 }

@@ -30,7 +30,6 @@ public class AuthController {
         this.authService = authService;
     }
 
-    // Register new user
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterDTO registerDTO, HttpServletRequest request) {
         String ipAddress = request.getRemoteAddr();
@@ -46,7 +45,16 @@ public class AuthController {
         }
     }
 
-    // User login
+    @PostMapping("/Register")
+    public ResponseEntity<String> Register(@RequestBody RegisterDTO registerDTO) {
+        try {
+            authService.registerUser(registerDTO);
+            return new ResponseEntity<>("User registered successfully!", HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@RequestBody LoginDTO loginDTO, HttpServletRequest request) {
         String ipAddress = request.getRemoteAddr();
@@ -58,6 +66,16 @@ public class AuthController {
         } catch (RuntimeException e) {
             logger.warn("Failed login attempt by '{}' from IP: {}", loginDTO.getUsername(), ipAddress);
             securityLogService.logAccess("LOGIN", loginDTO.getUsername(), "FAILURE", ipAddress, e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+    }
+
+    @PostMapping("/Login")
+    public ResponseEntity<AuthResponseDTO> Login(@RequestBody LoginDTO loginDTO) {
+        try {
+            AuthResponseDTO response = authService.loginUser(loginDTO);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
     }
